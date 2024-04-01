@@ -480,7 +480,7 @@ class MangaTranslator():
         return new_textlines
 
     async def _run_textline_merge(self, ctx: Context):
-        text_regions = await dispatch_textline_merge(ctx.textlines, ctx.img_rgb.shape[1], ctx.img_rgb.shape[0],
+        text_regions = await dispatch_textline_merge(ctx.textlines,ctx.img_rgb , ctx.img_rgb.shape[1], ctx.img_rgb.shape[0],
                                                      verbose=self.verbose)
         new_text_regions = []
         for region in text_regions:

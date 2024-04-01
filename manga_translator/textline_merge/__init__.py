@@ -5,6 +5,7 @@ from collections import Counter
 import networkx as nx
 from shapely.geometry import Polygon
 
+from ..bubble_detector import dispatch as dispatch_bubble
 from ..utils import TextBlock, Quadrilateral, quadrilateral_can_merge_region
 
 def split_text_region(
@@ -181,7 +182,7 @@ def merge_bboxes_text_region(bboxes: List[Quadrilateral], width, height):
         # yield overall bbox and sorted indices
         yield txtlns, (fg_r, fg_g, fg_b), (bg_r, bg_g, bg_b)
 
-async def dispatch(textlines: List[Quadrilateral], width: int, height: int, verbose: bool = False) -> List[TextBlock]:
+async def dispatch(textlines: List[Quadrilateral],img: np.ndarray, width: int, height: int, verbose: bool = False) -> List[TextBlock]:
     # print(width, height)
     # import re
     # for l in textlines:
@@ -190,6 +191,10 @@ async def dispatch(textlines: List[Quadrilateral], width: int, height: int, verb
     #     print(s)
 
     text_regions: List[TextBlock] = []
+    bubble_detected_regions = dispatch_bubble(img)
+    bubble_regions=[]
+    for bubbleCoord in bubble_detected_regions:
+        bubble_regions.append(bubbleCoord)
     for (txtlns, fg_color, bg_color) in merge_bboxes_text_region(textlines, width, height):
         total_logprobs = 0
         for txtln in txtlns:
@@ -201,6 +206,10 @@ async def dispatch(textlines: List[Quadrilateral], width: int, height: int, verb
         if abs(angle) < 3:
             angle = 0
         lines = [txtln.pts for txtln in txtlns]
+        for bubble in bubble_regions:
+            if bubble[0][0]<lines[:][0][0][0]<bubble[2][0]:
+                if bubble[1][1]<lines[:][0][0][1]<bubble[3][1]:
+                    lines.append(bubble)
         texts = [txtln.text for txtln in txtlns]
         region = TextBlock(lines, texts, font_size=font_size, angle=angle, prob=np.exp(total_logprobs),
                            fg_color=fg_color, bg_color=bg_color)
